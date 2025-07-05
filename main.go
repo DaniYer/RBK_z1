@@ -1,14 +1,13 @@
 package main
 
 import (
+	"RBK_z1/internal/commands"
 	"RBK_z1/internal/iohelper"
 	"RBK_z1/internal/parser"
 	"fmt"
 	"os"
 	"regexp"
 	"strconv"
-
-	"RBK_z1/internal/commands"
 )
 
 // Точка входа
