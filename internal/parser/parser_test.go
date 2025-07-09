@@ -90,3 +90,5 @@ func runPipeline(input string) string {
 
 	return JoinWithSpacing(final)
 }
+
+

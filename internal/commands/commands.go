@@ -7,7 +7,6 @@ import (
 	"unicode"
 )
 
-// Выполняет команду преобразования над словом
 func ApplyCmd(cmd, word string) string {
 	switch cmd {
 	case "cap":
@@ -24,8 +23,6 @@ func ApplyCmd(cmd, word string) string {
 	return word
 }
 
-// --- Функции регистров и преобразований
-
 func Cap(word string) string {
 	if len(word) == 0 {
 		return word
@@ -39,11 +36,11 @@ func Cap(word string) string {
 }
 
 func Up(word string) string {
-	return strings.ToUpper(word)
+	return strings.ToUpperSpecial(unicode.TurkishCase, word)
 }
 
 func Low(word string) string {
-	return strings.ToLower(word)
+	return strings.ToLowerSpecial(unicode.TurkishCase, word)
 }
 
 func Hex(word string) string {

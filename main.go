@@ -8,34 +8,64 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"unicode"
 )
 
-// Точка входа
+// Проверка, состоит ли слово из латинских букв (для команд и a/an)
+func isLatin(s string) bool {
+	for _, r := range s {
+		if unicode.IsLetter(r) && r > unicode.MaxLatin1 {
+			return false
+		}
+	}
+	return true
+}
+
 func main() {
 	args := os.Args[1:]
-	if len(args) < 2 {
+	if len(args) != 2 {
 		fmt.Println("Usage: go run . input.txt output.txt")
 		return
 	}
 
-	// Чтение и очистка входного файла
 	raw, err := iohelper.ReadInput("./files/" + args[0])
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
 	}
 
-	// Предобработка текста: исправление сокращений и удаление лишних пробелов
 	clean := parser.CleanText(string(raw))
-
-	// Разбиваем текст на слова, команды и знаки препинания
 	words := parser.SplitWithPunctuation(clean)
 
-	// Обработка команд (cap, low, up, bin, hex), включая расширенные (cap, N)
 	for i := 0; i < len(words); i++ {
 		word := words[i]
 
-		// Расширенные команды: (cmd, N)
+		// 🔤 Обработка "a"/"an" для латинских слов
+		if i < len(words)-1 && (word == "a" || word == "an" || word == "A" || word == "An" || word == "AN") {
+			next := words[i+1]
+			if isLatin(next) && len(next) > 0 {
+				firstLetter := []rune(next)[0]
+				isVowel := regexp.MustCompile(`(?i)^[aeiou]`).MatchString(string(firstLetter))
+
+				original := word
+				if isVowel && word == "a" {
+					words[i] = "an"
+				} else if !isVowel && word == "an" {
+					words[i] = "a"
+				}
+
+				if words[i] == "an" && (original == "A" || original == "AN") {
+					words[i] = "An"
+				} else if words[i] == "a" && (original == "An" || original == "AN") {
+					words[i] = "A"
+				}
+			}
+		}
+
+		if !isLatin(word) {
+			continue
+		}
+
 		if m := regexp.MustCompile(`^\((cap|low|up),\s*(\d+)\)$`).FindStringSubmatch(word); m != nil {
 			cmd := m[1]
 			count, _ := strconv.Atoi(m[2])
@@ -46,13 +76,11 @@ func main() {
 			for j := start; j < i; j++ {
 				words[j] = commands.ApplyCmd(cmd, words[j])
 			}
-			// Удаляем команду из списка
 			words = append(words[:i], words[i+1:]...)
 			i--
 			continue
 		}
 
-		// Простые команды: (cmd)
 		if m := regexp.MustCompile(`^\((cap|low|up|bin|hex)\)$`).FindStringSubmatch(word); m != nil {
 			cmd := m[1]
 			if i > 0 {
@@ -62,9 +90,9 @@ func main() {
 			i--
 		}
 	}
+
 	result := parser.JoinWithSpacing(words)
 
-	// Запись результата в выходной файл
 	if err := iohelper.WriteOutput("./files/"+args[1], result); err != nil {
 		fmt.Println("Error:", err)
 	}
