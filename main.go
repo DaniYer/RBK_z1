@@ -8,18 +8,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
-	"unicode"
 )
-
-// Проверка, состоит ли слово из латинских букв (для команд и a/an)
-func isLatin(s string) bool {
-	for _, r := range s {
-		if unicode.IsLetter(r) && r > unicode.MaxLatin1 {
-			return false
-		}
-	}
-	return true
-}
 
 func main() {
 	args := os.Args[1:]
@@ -42,8 +31,6 @@ func main() {
 
 		if i < len(words)-1 && (word == "a" || word == "an" || word == "A" || word == "An" || word == "AN") {
 			next := words[i+1]
-
-			// Убираем кавычки, если есть
 			unquoted := []rune(next)
 			for len(unquoted) > 0 {
 				r := unquoted[0]
@@ -53,28 +40,21 @@ func main() {
 					break
 				}
 			}
-
-			if len(unquoted) > 0 && isLatin(string(unquoted)) {
+			if len(unquoted) > 0 {
 				firstLetter := unquoted[0]
 				isVowel := regexp.MustCompile(`(?i)^[aeiou]`).MatchString(string(firstLetter))
-
 				original := word
 				if isVowel && word == "a" {
 					words[i] = "an"
 				} else if !isVowel && word == "an" {
 					words[i] = "a"
 				}
-
 				if words[i] == "an" && (original == "A" || original == "AN") {
 					words[i] = "An"
 				} else if words[i] == "a" && (original == "An" || original == "AN") {
 					words[i] = "A"
 				}
 			}
-		}
-
-		if !isLatin(word) {
-			continue
 		}
 
 		if m := regexp.MustCompile(`^\((cap|low|up),\s*(\d+)\)$`).FindStringSubmatch(word); m != nil {
@@ -103,7 +83,6 @@ func main() {
 	}
 
 	result := parser.JoinWithSpacing(words)
-
 	if err := iohelper.WriteOutput("./files/"+args[1], result); err != nil {
 		fmt.Println("Error:", err)
 	}

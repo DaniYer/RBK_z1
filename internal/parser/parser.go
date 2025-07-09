@@ -3,40 +3,76 @@ package parser
 import (
 	"regexp"
 	"strings"
+	"unicode"
 )
 
-// Предобработка текста: сокращения и пунктуация
 func CleanText(text string) string {
-	reApostropheFix := regexp.MustCompile(`\b(\w+)\s*'\s*(m|re|s|ve|d|ll)\b`)
-	text = reApostropheFix.ReplaceAllString(text, `$1@@$2`)
-	text = strings.ReplaceAll(text, "@@", `'`)
-
-	reSpaceBeforePunct := regexp.MustCompile(`\s+([.,!?;:])`)
-	text = reSpaceBeforePunct.ReplaceAllString(text, `$1`)
-	text = reApostropheFix.ReplaceAllString(text, `$1@@$2`)
-	text = reApostropheFix.ReplaceAllString(text, `$1@@$2`)
-	text = strings.ReplaceAll(text, "@@", `'`)
-	return text
+	text = regexp.MustCompile(`\s+'`).ReplaceAllString(text, "'")
+	text = regexp.MustCompile(`'\s+`).ReplaceAllString(text, "'")
+	text = regexp.MustCompile(`\s+`).ReplaceAllString(text, " ")
+	text = regexp.MustCompile(`\s+([.,!?;:])`).ReplaceAllString(text, "$1")
+	text = regexp.MustCompile(`,([^\s])`).ReplaceAllString(text, ", $1")
+	return strings.TrimSpace(text)
 }
 
-// Разделяет строку на слова, команды и знаки препинания
 func SplitWithPunctuation(text string) []string {
-	re := regexp.MustCompile(`[\w@']+|\([^)]+\)|[.,!?;:]`)
-	return re.FindAllString(text, -1)
+	var tokens []string
+	var current strings.Builder
+
+	for _, r := range text {
+		if unicode.IsSpace(r) {
+			if current.Len() > 0 {
+				tokens = append(tokens, current.String())
+				current.Reset()
+			}
+		} else if isPunctuation(r) {
+			if current.Len() > 0 {
+				tokens = append(tokens, current.String())
+				current.Reset()
+			}
+			tokens = append(tokens, string(r))
+		} else {
+			current.WriteRune(r)
+		}
+	}
+	if current.Len() > 0 {
+		tokens = append(tokens, current.String())
+	}
+	return tokens
 }
 
-// Собирает текст обратно, соблюдая пробелы и пунктуацию
+func isPunctuation(r rune) bool {
+	punct := []rune{'.', ',', ';', ':', '!', '?', '"', '\'', '“', '”', '‘', '’', '(', ')'}
+	for _, p := range punct {
+		if r == p {
+			return true
+		}
+	}
+	return false
+}
+
 func JoinWithSpacing(words []string) string {
 	var sb strings.Builder
-	punctuation := map[string]bool{
-		".": true, ",": true, "!": true, "?": true, ";": true, ":": true,
-	}
-
-	for i, word := range words {
-		if i > 0 && !punctuation[word] {
-			sb.WriteString(" ")
+	for i := 0; i < len(words); i++ {
+		word := words[i]
+		if i > 0 && needsSpace(words[i-1], word) {
+			sb.WriteRune(' ')
 		}
 		sb.WriteString(word)
 	}
 	return sb.String()
+}
+
+func needsSpace(prev, curr string) bool {
+	if isPunctuationRune([]rune(curr)[0]) {
+		return false
+	}
+	if isPunctuationRune([]rune(prev)[len([]rune(prev))-1]) {
+		return true
+	}
+	return true
+}
+
+func isPunctuationRune(r rune) bool {
+	return strings.ContainsRune(".,!?;:\")('“”‘’", r)
 }
