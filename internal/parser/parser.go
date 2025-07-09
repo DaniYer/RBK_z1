@@ -13,7 +13,9 @@ func CleanText(text string) string {
 
 	reSpaceBeforePunct := regexp.MustCompile(`\s+([.,!?;:])`)
 	text = reSpaceBeforePunct.ReplaceAllString(text, `$1`)
-
+	text = reApostropheFix.ReplaceAllString(text, `$1@@$2`)
+	text = reApostropheFix.ReplaceAllString(text, `$1@@$2`)
+	text = strings.ReplaceAll(text, "@@", `'`)
 	return text
 }
 

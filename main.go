@@ -40,11 +40,22 @@ func main() {
 	for i := 0; i < len(words); i++ {
 		word := words[i]
 
-		// 🔤 Обработка "a"/"an" для латинских слов
 		if i < len(words)-1 && (word == "a" || word == "an" || word == "A" || word == "An" || word == "AN") {
 			next := words[i+1]
-			if isLatin(next) && len(next) > 0 {
-				firstLetter := []rune(next)[0]
+
+			// Убираем кавычки, если есть
+			unquoted := []rune(next)
+			for len(unquoted) > 0 {
+				r := unquoted[0]
+				if r == '"' || r == '\'' || r == '“' || r == '”' || r == '‘' || r == '’' {
+					unquoted = unquoted[1:]
+				} else {
+					break
+				}
+			}
+
+			if len(unquoted) > 0 && isLatin(string(unquoted)) {
+				firstLetter := unquoted[0]
 				isVowel := regexp.MustCompile(`(?i)^[aeiou]`).MatchString(string(firstLetter))
 
 				original := word
